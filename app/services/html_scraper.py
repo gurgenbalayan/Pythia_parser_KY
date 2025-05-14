@@ -120,9 +120,10 @@ async def fetch_company_data(query: str) -> list[dict]:
         )
         current_url = driver.current_url
         if "Profile.aspx" in current_url:
-            print("Произошло перенаправление на профиль:", current_url)
+            wait.until(EC.visibility_of_element_located((By.ID, "MainContent_pInfo")))
+            html = driver.page_source
+            return await parse_html_details_small(html, current_url)
         else:
-            print("Остались на странице поиска:", current_url)
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,
                                                     "#MainContent_PSearchResults")))
             html = driver.page_source
@@ -171,7 +172,23 @@ async def parse_html_search(html: str) -> List[Dict]:
 
     return results
 
-
+async def parse_html_details_small(html: str, current_url: str) -> dict:
+    soup = BeautifulSoup(html, "html.parser")
+    result = {}
+    result["state"] = STATE
+    result["name"] = soup.find("span", id="MainContent_lblName").text.strip()
+    result["link"] = current_url
+    for row in soup.select(".company-info-container .grid-row"):
+        label_elem = row.select_one(".grid-label")
+        value_elem = row.select_one(".grid-value")
+        if label_elem and value_elem:
+            label = label_elem.get_text(strip=True)
+            value = value_elem.get_text(" ", strip=True).replace("\xa0", " ")
+            if label == "Organization Number":
+                result["id"] = value
+            if label == "Status":
+                result["status"] = value
+    return result
 async def parse_html_details(html: str) -> dict:
     def exists_multiple(lst, **kwargs):
         return any(all(d.get(k) == v for k, v in kwargs.items()) for d in lst)
