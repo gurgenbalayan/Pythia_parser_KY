@@ -167,7 +167,7 @@ async def parse_html_search(html: str) -> List[Dict]:
             "name": name,
             "status": status,
             "id": company_id,
-            "link": "https://sosbes.sos.ky.gov/BusSearchNProfile/" + link
+            "url": "https://sosbes.sos.ky.gov/BusSearchNProfile/" + link
         })
 
     return results
